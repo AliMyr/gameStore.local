@@ -5,31 +5,30 @@ session_start();
 $host = '127.127.126.50';
 $db = 'gamestore';
 $user = 'root';
-$pass = '';  // Пароль пустой, если не менял
+$pass = ''; 
 
-// Инициализируем переменную $games как пустой массив
-$games = [];
+$games = [];  // Массив для последних игр
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Запрос для получения всех игр
-    $sql = "SELECT * FROM games";
+
+    // Запрос для получения последних 3 игр
+    $sql = "SELECT * FROM games ORDER BY created_at DESC LIMIT 3";
     $stmt = $conn->query($sql);
     $games = $stmt->fetchAll();
 
 } catch (PDOException $e) {
-    echo "Connection failed: " . $e->getMessage();
+    echo "Ошибка соединения: " . $e->getMessage();
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Game Store!</title>
+    <title>Game Store</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -40,34 +39,34 @@ try {
                 <li><a href="index.php">Home</a></li>
                 <li><a href="catalog.php">Catalog</a></li>
                 <li><a href="cart.php">Cart</a></li>
+                <?php if (isset($_SESSION['username'])): ?>
+                    <li><a href="logout.php">Logout (<?php echo htmlspecialchars($_SESSION['username']); ?>)</a></li>
+                <?php else: ?>
+                    <li><a href="login.php">Login</a></li>
+                    <li><a href="register.php">Register</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section>
-            <h2>Available Games</h2>
-            
-            <?php if (count($games) > 0): ?>
-                <ul>
+        <section class="featured-games">
+            <h2>Latest Games</h2>
+            <div class="games-list">
+                <?php if (isset($games) && count($games) > 0): ?>
                     <?php foreach ($games as $game): ?>
-                        <li>
+                        <div class="game-card">
                             <h3><?php echo htmlspecialchars($game['title'] ?? 'No title'); ?></h3>
-                            <p>Price: $<?php echo htmlspecialchars($game['price'] ?? 'N/A'); ?></p>
-                            <p>Genre: <?php echo htmlspecialchars($game['genre'] ?? 'No genre'); ?></p> <!-- Отображаем жанр -->
-                            <p><?php echo htmlspecialchars($game['description'] ?? 'No description available'); ?></p>
-                            <!-- Проверка наличия изображения и вывод изображения по умолчанию -->
-                            <img src="../images/<?php echo htmlspecialchars($game['image'] ?? 'default.jpg'); ?>" alt="<?php echo htmlspecialchars($game['title'] ?? 'No title'); ?>" width="100">
-                            <form method="POST" action="cart.php">
-                                <input type="hidden" name="game_id" value="<?php echo htmlspecialchars($game['id']); ?>">
-                                <button type="submit">Add to Cart</button>
-                            </form>
-                        </li>
+                            <img src="../images/<?php echo htmlspecialchars($game['image'] ?? 'default.jpg'); ?>" alt="<?php echo htmlspecialchars($game['title']); ?>" width="150">
+                            <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
+                            <p>Genre: <?php echo htmlspecialchars($game['genre']); ?></p>
+                            <a href="product.php?id=<?php echo htmlspecialchars($game['id']); ?>" class="details-link">View Details</a>
+                        </div>
                     <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>No games available.</p>
-            <?php endif; ?>
+                <?php else: ?>
+                    <p>No games available.</p>
+                <?php endif; ?>
+            </div>
         </section>
     </main>
 

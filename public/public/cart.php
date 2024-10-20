@@ -27,45 +27,52 @@ if (isset($_POST['clear_cart'])) {
 
 // Оформление заказа
 if (isset($_POST['place_order'])) {
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $address = $_POST['address'];
+    // Проверка валидности данных
+    $name = htmlspecialchars(trim($_POST['name']));
+    $email = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+    $address = htmlspecialchars(trim($_POST['address']));
     $total_price = 0;
 
-    // Считаем общую стоимость заказа
-    foreach ($_SESSION['cart'] as $game) {
-        $total_price += $game['price'] * $game['quantity'];
-    }
+    if (!$email) {
+        echo "<p>Invalid email address.</p>";
+    } else {
+        // Считаем общую стоимость заказа
+        foreach ($_SESSION['cart'] as $game) {
+            $total_price += $game['price'] * $game['quantity'];
+        }
 
-    // Сохраняем заказ в базе данных
-    $sql = "INSERT INTO orders (name, email, address, total_price) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([$name, $email, $address, $total_price]);
-
-    // Получаем ID последнего заказа
-    $order_id = $conn->lastInsertId();
-
-    // Сохраняем товары из корзины в таблицу order_items
-    foreach ($_SESSION['cart'] as $game_id => $game) {
-        $sql = "INSERT INTO order_items (order_id, game_title, price, quantity) VALUES (?, ?, ?, ?)";
+        // Сохраняем заказ в базе данных
+        $sql = "INSERT INTO orders (name, email, address, total_price) VALUES (?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$order_id, $game['title'], $game['price'], $game['quantity']]);
+        $stmt->execute([$name, $email, $address, $total_price]);
+
+        // Получаем ID последнего заказа
+        $order_id = $conn->lastInsertId();
+
+        // Сохраняем товары из корзины в таблицу order_items
+        foreach ($_SESSION['cart'] as $game_id => $game) {
+            $sql = "INSERT INTO order_items (order_id, game_title, price, quantity) VALUES (?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$order_id, $game['title'], $game['price'], $game['quantity']]);
+        }
+
+        // Отправляем подтверждение заказа на e-mail
+        $to = $email;
+        $subject = 'Order Confirmation - Game Store';
+        $message = "Thank you for your order! Your order ID is $order_id. We will process it shortly.";
+        $headers = 'From: no-reply@gamestore.com' . "\r\n" .
+                   'Reply-To: no-reply@gamestore.com' . "\r\n" .
+                   'X-Mailer: PHP/' . phpversion();
+
+        if (mail($to, $subject, $message, $headers)) {
+            echo "<p>Thank you for your order! Your order ID is: $order_id</p>";
+        } else {
+            echo "<p>Order placed, but confirmation email could not be sent.</p>";
+        }
+
+        // Очищаем корзину после оформления заказа
+        unset($_SESSION['cart']);
     }
-
-    // Отправляем подтверждение заказа на e-mail
-    $to = $email;  // Email клиента
-    $subject = 'Order Confirmation - Game Store';
-    $message = "Thank you for your order! Your order ID is $order_id. We will process it shortly.";
-    $headers = 'From: no-reply@gamestore.com' . "\r\n" .
-               'Reply-To: no-reply@gamestore.com' . "\r\n" .
-               'X-Mailer: PHP/' . phpversion();
-
-    mail($to, $subject, $message, $headers);
-
-    // Очищаем корзину после оформления заказа
-    unset($_SESSION['cart']);
-
-    echo "<p>Thank you for your order! Your order ID is: $order_id</p>";
 }
 ?>
 
@@ -92,14 +99,16 @@ if (isset($_POST['place_order'])) {
     <main>
         <section>
             <h2>Items in your Cart</h2>
-            
+
             <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
                 <ul>
+                    <?php $total = 0; ?>
                     <?php foreach ($_SESSION['cart'] as $game_id => $game): ?>
                         <li>
                             <h3><?php echo htmlspecialchars($game['title']); ?></h3>
                             <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
                             <p>Quantity: <?php echo htmlspecialchars($game['quantity']); ?></p>
+                            <?php $total += $game['price'] * $game['quantity']; ?>
                             
                             <form method="POST" action="cart.php">
                                 <input type="hidden" name="game_id" value="<?php echo $game_id; ?>">
@@ -108,6 +117,9 @@ if (isset($_POST['place_order'])) {
                         </li>
                     <?php endforeach; ?>
                 </ul>
+
+                <h3>Total Price: $<?php echo number_format($total, 2); ?></h3>
+
                 <form method="POST" action="cart.php">
                     <button type="submit" name="clear_cart">Clear Cart</button>
                 </form>
@@ -127,6 +139,7 @@ if (isset($_POST['place_order'])) {
                 </form>
             <?php else: ?>
                 <p>Your cart is empty.</p>
+                <a href="catalog.php">Go to Catalog</a>
             <?php endif; ?>
         </section>
     </main>

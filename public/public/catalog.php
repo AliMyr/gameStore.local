@@ -5,54 +5,92 @@ session_start();
 $host = '127.127.126.50';
 $db = 'gamestore';
 $user = 'root';
-$pass = '';  // Пароль пустой, если не менял
+$pass = '';
 
-// Инициализируем переменную $games как пустой массив
 $games = [];
+$genres = [];
+$prices = [];
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Базовый SQL-запрос для получения всех игр
-    $sql = "SELECT * FROM games WHERE 1";
+
+    // Запрос для получения уникальных жанров
+    $genre_sql = "SELECT DISTINCT genre FROM games WHERE genre IS NOT NULL";
+    $stmt = $conn->query($genre_sql);
+    $genres = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    // Пример ценовых диапазонов
+    $prices = [
+        '0-50' => 'Under $50',
+        '51-100' => '$51 to $100',
+        '101-500' => '$101 to $500',
+        '501+' => 'Above $500',
+    ];
+
+    // Основной запрос
+    $sql = "SELECT * FROM games WHERE 1=1";
+
+    // Фильтрация по жанру
+    if (isset($_GET['genre']) && $_GET['genre'] !== '') {
+        $genre = $_GET['genre'];
+        $sql .= " AND genre = :genre";
+    }
 
     // Фильтрация по цене
-    if (isset($_GET['price_range'])) {
+    if (isset($_GET['price_range']) && $_GET['price_range'] !== '') {
         $price_range = $_GET['price_range'];
-
-        if ($price_range == 'under_100') {
-            $sql .= " AND price < 100";
-        } elseif ($price_range == '100_500') {
-            $sql .= " AND price BETWEEN 100 AND 500";
-        } elseif ($price_range == 'over_500') {
+        if ($price_range == '0-50') {
+            $sql .= " AND price <= 50";
+        } elseif ($price_range == '51-100') {
+            $sql .= " AND price > 50 AND price <= 100";
+        } elseif ($price_range == '101-500') {
+            $sql .= " AND price > 100 AND price <= 500";
+        } elseif ($price_range == '501+') {
             $sql .= " AND price > 500";
         }
     }
 
-    // Фильтрация по жанрам
-    if (isset($_GET['genre']) && $_GET['genre'] != '') {
-        $genre = $_GET['genre'];
-        $sql .= " AND genre = '$genre'";
+    $stmt = $conn->prepare($sql);
+    if (isset($genre)) {
+        $stmt->bindParam(':genre', $genre);
     }
-
-    // Поиск по ключевым словам (название и описание игры)
-    if (isset($_GET['search']) && $_GET['search'] != '') {
-        $search = $_GET['search'];
-        $sql .= " AND (title LIKE '%$search%' OR description LIKE '%$search%')";
-    }
-
-    // Выполняем запрос с фильтрацией
-    $stmt = $conn->query($sql);
+    $stmt->execute();
     $games = $stmt->fetchAll();
-
+    
 } catch (PDOException $e) {
-    echo "Connection failed: " . $e->getMessage();
+    echo "Ошибка соединения: " . $e->getMessage();
+}
+
+// Обработка добавления в корзину
+if (isset($_POST['add_to_cart'])) {
+    $game_id = $_POST['game_id'];
+    $title = $_POST['title'];
+    $price = $_POST['price'];
+
+    if (!isset($_SESSION['cart'])) {
+        $_SESSION['cart'] = [];
+    }
+
+    if (isset($_SESSION['cart'][$game_id])) {
+        // Если товар уже в корзине, увеличиваем количество
+        $_SESSION['cart'][$game_id]['quantity']++;
+    } else {
+        // Если товара нет в корзине, добавляем его
+        $_SESSION['cart'][$game_id] = [
+            'title' => $title,
+            'price' => $price,
+            'quantity' => 1
+        ];
+    }
+
+    // Сообщение об успешном добавлении
+    $success_message = "Game added to cart!";
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,56 +105,67 @@ try {
                 <li><a href="index.php">Home</a></li>
                 <li><a href="catalog.php">Catalog</a></li>
                 <li><a href="cart.php">Cart</a></li>
+                <?php if (isset($_SESSION['username'])): ?>
+                    <li><a href="logout.php">Logout (<?php echo htmlspecialchars($_SESSION['username']); ?>)</a></li>
+                <?php else: ?>
+                    <li><a href="login.php">Login</a></li>
+                    <li><a href="register.php">Register</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section>
-            <h2>Filter by Price</h2>
+        <?php if (isset($success_message)): ?>
+            <p class="success"><?php echo $success_message; ?></p>
+        <?php endif; ?>
+
+        <!-- Фильтры -->
+        <section class="filter-section">
             <form method="GET" action="catalog.php">
-                <select name="price_range" onchange="this.form.submit()">
+                <select name="price_range">
                     <option value="">Select price range</option>
-                    <option value="under_100" <?php if (isset($_GET['price_range']) && $_GET['price_range'] == 'under_100') echo 'selected'; ?>>Under $100</option>
-                    <option value="100_500" <?php if (isset($_GET['price_range']) && $_GET['price_range'] == '100_500') echo 'selected'; ?>>$100 - $500</option>
-                    <option value="over_500" <?php if (isset($_GET['price_range']) && $_GET['price_range'] == 'over_500') echo 'selected'; ?>>Over $500</option>
+                    <?php foreach ($prices as $key => $label): ?>
+                        <option value="<?php echo htmlspecialchars($key); ?>" <?php if (isset($_GET['price_range']) && $_GET['price_range'] == $key) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($label); ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
-            </form>
 
-            <h2>Filter by Genre</h2>
-            <form method="GET" action="catalog.php">
-                <select name="genre" onchange="this.form.submit()">
+                <select name="genre">
                     <option value="">Select genre</option>
-                    <option value="Action" <?php if (isset($_GET['genre']) && $_GET['genre'] == 'Action') echo 'selected'; ?>>Action</option>
-                    <option value="Adventure" <?php if (isset($_GET['genre']) && $_GET['genre'] == 'Adventure') echo 'selected'; ?>>Adventure</option>
-                    <option value="RPG" <?php if (isset($_GET['genre']) && $_GET['genre'] == 'RPG') echo 'selected'; ?>>RPG</option>
-                    <!-- Добавь другие жанры по мере необходимости -->
+                    <?php foreach ($genres as $genre): ?>
+                        <option value="<?php echo htmlspecialchars($genre); ?>" <?php if (isset($_GET['genre']) && $_GET['genre'] == $genre) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($genre); ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
-            </form>
 
-            <h2>Search Games</h2>
-            <form method="GET" action="catalog.php">
-                <input type="text" name="search" placeholder="Search for games" value="<?php if (isset($_GET['search'])) echo htmlspecialchars($_GET['search']); ?>">
                 <button type="submit">Search</button>
             </form>
-
-            <h2>Games</h2>
-            
-            <?php if (count($games) > 0): ?>
-                <ul>
-                    <?php foreach ($games as $game): ?>
-                        <li>
-                            <h3><?php echo htmlspecialchars($game['title']); ?></h3>
-                            <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
-                            <p><?php echo htmlspecialchars($game['description']); ?></p>
-                            <img src="../images/<?php echo htmlspecialchars($game['image']); ?>" alt="<?php echo htmlspecialchars($game['title']); ?>" width="100">
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>No games found matching your criteria.</p>
-            <?php endif; ?>
         </section>
+
+        <!-- Список игр -->
+        <div class="games-list">
+            <?php if (count($games) > 0): ?>
+                <?php foreach ($games as $game): ?>
+                    <div class="game-card">
+                        <h3><?php echo htmlspecialchars($game['title']); ?></h3>
+                        <img src="../images/<?php echo !empty($game['image']) ? htmlspecialchars($game['image']) : 'default.jpg'; ?>" alt="<?php echo htmlspecialchars($game['title']); ?>">
+                        <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
+                        <p>Genre: <?php echo htmlspecialchars($game['genre']); ?></p>
+                        <form method="POST" action="catalog.php">
+                            <input type="hidden" name="game_id" value="<?php echo htmlspecialchars($game['id']); ?>">
+                            <input type="hidden" name="title" value="<?php echo htmlspecialchars($game['title']); ?>">
+                            <input type="hidden" name="price" value="<?php echo htmlspecialchars($game['price']); ?>">
+                            <button type="submit" name="add_to_cart">Add to Cart</button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No games found.</p>
+            <?php endif; ?>
+        </div>
     </main>
 
     <footer>

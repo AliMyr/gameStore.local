@@ -1,7 +1,23 @@
 # Включаем модуль перезаписи
 RewriteEngine On
 
-# Пример простого правила перезаписи URL
+# Исключаем файлы с расширением .css, .js, .png, .jpg и т.д. из перезаписи URL
+RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|ico)$ [NC]
+
+# Пример простого правила перезаписи URL для всех остальных запросов
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+# Устанавливаем правильный MIME-тип для файлов CSS и JS
+<FilesMatch "\.(css|js)$">
+    AddType text/css .css
+    AddType application/javascript .js
+    FileETag None
+    <ifModule mod_headers.c>
+        Header unset ETag
+        Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+    </ifModule>
+</FilesMatch>
