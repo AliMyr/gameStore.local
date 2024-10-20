@@ -1,42 +1,48 @@
 <?php
 session_start();
 
-// Проверка авторизации
+// Проверка авторизации администратора
 if (!isset($_SESSION['admin_logged_in'])) {
     header('Location: login.php');
     exit();
 }
 
 // Подключение к базе данных
-$host = '127.127.126.50';  // Используем этот IP-адрес вместо localhost
-$db = 'gamestore';         // Название базы данных
-$user = 'root';            // Имя пользователя
-$pass = '';                // Пароль по умолчанию пустой (если не менял)
+$host = '127.127.126.50';
+$db = 'gamestore';
+$user = 'root';
+$pass = '';  // Пароль пустой, если не менял
 
-$conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    echo "Connection failed: " . $e->getMessage();
+}
 
-if (isset($_POST['submit'])) {
-    // Получаем данные из формы
+// Обработка формы для добавления игры
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $title = $_POST['title'];
     $description = $_POST['description'];
     $price = $_POST['price'];
+    $genre = $_POST['genre'];
 
-    // Обработка изображения
-    $image = $_FILES['image']['name'];
-    $target = "../images/" . basename($image);
-
-    // Сохранение игры в базу данных
-    $sql = "INSERT INTO games (title, description, price, image) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([$title, $description, $price, $image]);
-
-    // Перемещаем загруженное изображение в папку
-    if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
-        echo "Game added successfully!";
+    // Проверка и обработка загрузки изображения
+    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+        $image_name = $_FILES['image']['name'];
+        $image_tmp_name = $_FILES['image']['tmp_name'];
+        $image_destination = '../images/' . $image_name;
+        move_uploaded_file($image_tmp_name, $image_destination);
     } else {
-        echo "Failed to upload image.";
+        $image_name = 'default.jpg'; // Если изображение не загружено, используем изображение по умолчанию
     }
+
+    // Сохранение данных игры в базу данных
+    $sql = "INSERT INTO games (title, description, price, image, genre) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$title, $description, $price, $image_name, $genre]);
+
+    echo "<p>Game added successfully!</p>";
 }
 ?>
 
@@ -62,21 +68,42 @@ if (isset($_POST['submit'])) {
     </header>
 
     <main>
-        <form method="POST" action="add_game.php" enctype="multipart/form-data">
-            <label for="title">Game Title:</label>
-            <input type="text" id="title" name="title" required>
-            <br>
-            <label for="description">Description:</label>
-            <textarea id="description" name="description" required></textarea>
-            <br>
-            <label for="price">Price:</label>
-            <input type="number" id="price" name="price" step="0.01" required>
-            <br>
-            <label for="image">Image:</label>
-            <input type="file" id="image" name="image" required>
-            <br>
-            <button type="submit" name="submit">Add Game</button>
-        </form>
+        <section>
+            <form method="POST" action="add_game.php" enctype="multipart/form-data">
+                <label for="title">Game Title:</label>
+                <input type="text" id="title" name="title" required>
+                <br>
+                
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+                <br>
+                
+                <label for="price">Price:</label>
+                <input type="number" id="price" name="price" step="0.01" required>
+                <br>
+
+                <label for="genre">Genre:</label>
+                <select name="genre" id="genre" required>
+                    <option value="Action">Action</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="RPG">RPG</option>
+                    <option value="Strategy">Strategy</option>
+                    <option value="Shooter">Shooter</option>
+                    <!-- Добавь другие жанры по мере необходимости -->
+                </select>
+                <br>
+                
+                <label for="image">Image:</label>
+                <input type="file" id="image" name="image">
+                <br>
+
+                <button type="submit">Add Game</button>
+            </form>
+        </section>
     </main>
+
+    <footer>
+        <p>&copy; 2024 Game Store</p>
+    </footer>
 </body>
 </html>

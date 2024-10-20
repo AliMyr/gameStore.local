@@ -52,6 +52,16 @@ if (isset($_POST['place_order'])) {
         $stmt->execute([$order_id, $game['title'], $game['price'], $game['quantity']]);
     }
 
+    // Отправляем подтверждение заказа на e-mail
+    $to = $email;  // Email клиента
+    $subject = 'Order Confirmation - Game Store';
+    $message = "Thank you for your order! Your order ID is $order_id. We will process it shortly.";
+    $headers = 'From: no-reply@gamestore.com' . "\r\n" .
+               'Reply-To: no-reply@gamestore.com' . "\r\n" .
+               'X-Mailer: PHP/' . phpversion();
+
+    mail($to, $subject, $message, $headers);
+
     // Очищаем корзину после оформления заказа
     unset($_SESSION['cart']);
 

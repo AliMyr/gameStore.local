@@ -1,44 +1,26 @@
 <?php
-session_start(); // Стартуем сессию для хранения корзины
+session_start();
 
-// Подключаемся к базе данных
+// Подключение к базе данных
 $host = '127.127.126.50';
 $db = 'gamestore';
 $user = 'root';
 $pass = '';  // Пароль пустой, если не менял
 
+// Инициализируем переменную $games как пустой массив
+$games = [];
+
 try {
     $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Запрос на получение всех игр
-    $stmt = $conn->query("SELECT * FROM games");
+    // Запрос для получения всех игр
+    $sql = "SELECT * FROM games";
+    $stmt = $conn->query($sql);
     $games = $stmt->fetchAll();
+
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();
-}
-
-// Добавление в корзину
-if (isset($_POST['add_to_cart'])) {
-    $game_id = $_POST['game_id'];
-    
-    if (!isset($_SESSION['cart'])) {
-        $_SESSION['cart'] = []; // Создаём корзину, если её нет
-    }
-
-    // Проверяем, есть ли уже игра в корзине
-    if (isset($_SESSION['cart'][$game_id])) {
-        $_SESSION['cart'][$game_id]['quantity']++;
-    } else {
-        // Добавляем игру в корзину
-        $_SESSION['cart'][$game_id] = [
-            'title' => $_POST['title'],
-            'price' => $_POST['price'],
-            'quantity' => 1,
-        ];
-    }
-    
-    echo "<p>Игра добавлена в корзину!</p>";
 }
 ?>
 
@@ -47,7 +29,7 @@ if (isset($_POST['add_to_cart'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Store</title>
+    <title>Welcome to Game Store!</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -70,22 +52,21 @@ if (isset($_POST['add_to_cart'])) {
                 <ul>
                     <?php foreach ($games as $game): ?>
                         <li>
-                            <h3><?php echo htmlspecialchars($game['title']); ?></h3>
-                            <p><?php echo htmlspecialchars($game['description']); ?></p>
-                            <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
-                            <img src="../images/<?php echo htmlspecialchars($game['image']); ?>" alt="<?php echo htmlspecialchars($game['title']); ?>" width="100">
-                            
-                            <form method="POST" action="index.php">
-                                <input type="hidden" name="game_id" value="<?php echo $game['id']; ?>">
-                                <input type="hidden" name="title" value="<?php echo htmlspecialchars($game['title']); ?>">
-                                <input type="hidden" name="price" value="<?php echo htmlspecialchars($game['price']); ?>">
-                                <button type="submit" name="add_to_cart">Add to Cart</button>
+                            <h3><?php echo htmlspecialchars($game['title'] ?? 'No title'); ?></h3>
+                            <p>Price: $<?php echo htmlspecialchars($game['price'] ?? 'N/A'); ?></p>
+                            <p>Genre: <?php echo htmlspecialchars($game['genre'] ?? 'No genre'); ?></p> <!-- Отображаем жанр -->
+                            <p><?php echo htmlspecialchars($game['description'] ?? 'No description available'); ?></p>
+                            <!-- Проверка наличия изображения и вывод изображения по умолчанию -->
+                            <img src="../images/<?php echo htmlspecialchars($game['image'] ?? 'default.jpg'); ?>" alt="<?php echo htmlspecialchars($game['title'] ?? 'No title'); ?>" width="100">
+                            <form method="POST" action="cart.php">
+                                <input type="hidden" name="game_id" value="<?php echo htmlspecialchars($game['id']); ?>">
+                                <button type="submit">Add to Cart</button>
                             </form>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             <?php else: ?>
-                <p>No games available at the moment.</p>
+                <p>No games available.</p>
             <?php endif; ?>
         </section>
     </main>

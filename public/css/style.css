@@ -5,6 +5,9 @@ body {
     padding: 0;
     background-color: #f9f9f9;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 header {
@@ -30,6 +33,7 @@ nav ul li a {
 }
 
 main {
+    flex: 1; /* Это позволит main занять всё доступное пространство */
     padding: 20px;
     max-width: 800px;
     margin: 0 auto;
@@ -60,12 +64,13 @@ img {
     margin-top: 10px;
 }
 
+/* Стили для футера */
 footer {
     text-align: center;
     padding: 20px;
     background-color: #333;
     color: white;
-    position: fixed;
+    position: relative; /* Меняем на relative */
     width: 100%;
-    bottom: 0;
+    margin-top: auto; /* Позволяет футеру оставаться внизу страницы */
 }

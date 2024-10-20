@@ -36,7 +36,18 @@ try {
         $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->execute([$new_status, $order_id]);
         $order['status'] = $new_status; // Обновляем локальную переменную для отображения
-        echo "<p>Status updated successfully!</p>";
+
+        // Отправляем уведомление клиенту на e-mail
+        $to = $order['email'];  // Email клиента
+        $subject = 'Order Status Update - Game Store';
+        $message = "Your order #$order_id status has been updated to: $new_status.";
+        $headers = 'From: no-reply@gamestore.com' . "\r\n" .
+                   'Reply-To: no-reply@gamestore.com' . "\r\n" .
+                   'X-Mailer: PHP/' . phpversion();
+
+        mail($to, $subject, $message, $headers);
+
+        echo "<p>Status updated successfully and notification sent to customer!</p>";
     }
 
 } catch (PDOException $e) {
