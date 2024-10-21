@@ -98,22 +98,9 @@ if (isset($_POST['add_to_cart'])) {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <header>
-        <h1>Game Catalog</h1>
-        <nav>
-            <ul>
-                <li><a href="index.php">Home</a></li>
-                <li><a href="catalog.php">Catalog</a></li>
-                <li><a href="cart.php">Cart</a></li>
-                <?php if (isset($_SESSION['username'])): ?>
-                    <li><a href="logout.php">Logout (<?php echo htmlspecialchars($_SESSION['username']); ?>)</a></li>
-                <?php else: ?>
-                    <li><a href="login.php">Login</a></li>
-                    <li><a href="register.php">Register</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-    </header>
+    <?php
+    include '../includes/public/header.php';
+    ?>
 
     <main>
         <?php if (isset($success_message)): ?>
@@ -168,8 +155,8 @@ if (isset($_POST['add_to_cart'])) {
         </div>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Game Store</p>
-    </footer>
+    <?php
+    include '../includes/public/footer.php';
+    ?>
 </body>
 </html>

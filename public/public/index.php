@@ -32,22 +32,10 @@ try {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <header>
-        <h1>Welcome to Game Store!</h1>
-        <nav>
-            <ul>
-                <li><a href="index.php">Home</a></li>
-                <li><a href="catalog.php">Catalog</a></li>
-                <li><a href="cart.php">Cart</a></li>
-                <?php if (isset($_SESSION['username'])): ?>
-                    <li><a href="logout.php">Logout (<?php echo htmlspecialchars($_SESSION['username']); ?>)</a></li>
-                <?php else: ?>
-                    <li><a href="login.php">Login</a></li>
-                    <li><a href="register.php">Register</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-    </header>
+    <!-- index.php -->
+    <?php
+    include '../includes/public/header.php';
+    ?>
 
     <main>
         <section class="featured-games">
@@ -70,8 +58,8 @@ try {
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Game Store</p>
-    </footer>
+    <?php
+    include '../includes/public/footer.php';
+    ?>
 </body>
 </html>

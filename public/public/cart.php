@@ -85,16 +85,9 @@ if (isset($_POST['place_order'])) {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <header>
-        <h1>Your Cart</h1>
-        <nav>
-            <ul>
-                <li><a href="index.php">Home</a></li>
-                <li><a href="catalog.php">Catalog</a></li>
-                <li><a href="cart.php">Cart</a></li>
-            </ul>
-        </nav>
-    </header>
+    <?php
+    include '../includes/public/header.php';
+    ?>
 
     <main>
         <section>
@@ -144,8 +137,8 @@ if (isset($_POST['place_order'])) {
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Game Store</p>
-    </footer>
+    <?php
+    include '../includes/public/footer.php';
+    ?>
 </body>
 </html>

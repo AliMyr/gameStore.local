@@ -55,17 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <header>
-        <h1>Add New Game</h1>
-        <nav>
-            <ul>
-                <li><a href="admin.php">Dashboard</a></li>
-                <li><a href="add_game.php">Add Game</a></li>
-                <li><a href="edit_game.php">Edit Game</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
+<?php include '../includes/admin/header.php'; ?>
 
     <main>
         <section>
@@ -102,8 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Game Store</p>
-    </footer>
+    <?php include '../includes/admin/footer.php'; ?>
 </body>
 </html>

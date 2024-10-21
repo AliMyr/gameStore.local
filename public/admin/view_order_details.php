@@ -64,17 +64,7 @@ try {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <header>
-        <h1>Order Details</h1>
-        <nav>
-            <ul>
-                <li><a href="admin.php">Dashboard</a></li>
-                <li><a href="add_game.php">Add Game</a></li>
-                <li><a href="view_orders.php">View Orders</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
+<?php include '../includes/admin/header.php'; ?>
 
     <main>
         <section>
@@ -110,8 +100,6 @@ try {
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Game Store</p>
-    </footer>
+    <?php include '../includes/admin/footer.php'; ?>
 </body>
 </html>
