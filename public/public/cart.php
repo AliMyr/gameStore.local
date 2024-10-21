@@ -14,15 +14,32 @@ try {
     echo "Connection failed: " . $e->getMessage();
 }
 
-// Удаление игры из корзины
+// Удаление игры из корзины и базы данных
 if (isset($_POST['remove'])) {
     $game_id = $_POST['game_id'];
+
+    // Удаляем товар из корзины в сессии
     unset($_SESSION['cart'][$game_id]);
+
+    // Если пользователь авторизован, удаляем товар из базы данных
+    if (isset($_SESSION['user_id'])) {
+        $delete_sql = "DELETE FROM carts WHERE user_id = :user_id AND game_id = :game_id";
+        $delete_stmt = $conn->prepare($delete_sql);
+        $delete_stmt->execute(['user_id' => $_SESSION['user_id'], 'game_id' => $game_id]);
+    }
 }
 
 // Очистка всей корзины
 if (isset($_POST['clear_cart'])) {
+    // Очищаем корзину в сессии
     unset($_SESSION['cart']);
+
+    // Если пользователь авторизован, очищаем корзину в базе данных
+    if (isset($_SESSION['user_id'])) {
+        $clear_sql = "DELETE FROM carts WHERE user_id = :user_id";
+        $clear_stmt = $conn->prepare($clear_sql);
+        $clear_stmt->execute(['user_id' => $_SESSION['user_id']]);
+    }
 }
 
 // Оформление заказа
@@ -42,9 +59,9 @@ if (isset($_POST['place_order'])) {
         }
 
         // Сохраняем заказ в базе данных
-        $sql = "INSERT INTO orders (name, email, address, total_price) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO orders (user_id, name, email, address, total_price) VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$name, $email, $address, $total_price]);
+        $stmt->execute([$_SESSION['user_id'], $name, $email, $address, $total_price]);
 
         // Получаем ID последнего заказа
         $order_id = $conn->lastInsertId();
@@ -56,22 +73,17 @@ if (isset($_POST['place_order'])) {
             $stmt->execute([$order_id, $game['title'], $game['price'], $game['quantity']]);
         }
 
-        // Отправляем подтверждение заказа на e-mail
-        $to = $email;
-        $subject = 'Order Confirmation - Game Store';
-        $message = "Thank you for your order! Your order ID is $order_id. We will process it shortly.";
-        $headers = 'From: no-reply@gamestore.com' . "\r\n" .
-                   'Reply-To: no-reply@gamestore.com' . "\r\n" .
-                   'X-Mailer: PHP/' . phpversion();
-
-        if (mail($to, $subject, $message, $headers)) {
-            echo "<p>Thank you for your order! Your order ID is: $order_id</p>";
-        } else {
-            echo "<p>Order placed, but confirmation email could not be sent.</p>";
-        }
-
         // Очищаем корзину после оформления заказа
         unset($_SESSION['cart']);
+
+        // Если пользователь авторизован, очищаем корзину в базе данных
+        if (isset($_SESSION['user_id'])) {
+            $clear_sql = "DELETE FROM carts WHERE user_id = :user_id";
+            $clear_stmt = $conn->prepare($clear_sql);
+            $clear_stmt->execute(['user_id' => $_SESSION['user_id']]);
+        }
+
+        echo "<p>Thank you for your order! Your order ID is: $order_id</p>";
     }
 }
 ?>

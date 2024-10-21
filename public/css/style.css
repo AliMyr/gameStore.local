@@ -1,4 +1,6 @@
-/* Общие стили */
+/*
+
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -35,7 +37,7 @@ main {
     margin: 0 auto;
 }
 
-/* Стили для фильтров и поиска */
+
 .filter-section, .search-section {
     display: flex;
     justify-content: space-between;
@@ -62,7 +64,7 @@ button:hover {
     background-color: #555;
 }
 
-/* Стили для карточек игр */
+
 .games-list {
     display: flex;
     justify-content: space-around;
@@ -110,7 +112,7 @@ button:hover {
 }
 
 
-/* Футер */
+
 footer {
     text-align: center;
     padding: 20px;
@@ -120,3 +122,4 @@ footer {
     width: 100%;
     bottom: 0;
 }
+*/

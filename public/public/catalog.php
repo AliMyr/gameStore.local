@@ -63,20 +63,21 @@ try {
 }
 
 // Обработка добавления в корзину
-if (isset($_POST['add_to_cart'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     $game_id = $_POST['game_id'];
     $title = $_POST['title'];
     $price = $_POST['price'];
 
+    // Инициализация корзины, если она еще не создана
     if (!isset($_SESSION['cart'])) {
         $_SESSION['cart'] = [];
     }
 
+    // Если игра уже в корзине, увеличиваем количество
     if (isset($_SESSION['cart'][$game_id])) {
-        // Если товар уже в корзине, увеличиваем количество
         $_SESSION['cart'][$game_id]['quantity']++;
     } else {
-        // Если товара нет в корзине, добавляем его
+        // Если игра еще не в корзине, добавляем её
         $_SESSION['cart'][$game_id] = [
             'title' => $title,
             'price' => $price,
@@ -84,7 +85,7 @@ if (isset($_POST['add_to_cart'])) {
         ];
     }
 
-    // Сообщение об успешном добавлении
+    // Уведомление об успешном добавлении
     $success_message = "Game added to cart!";
 }
 ?>
@@ -98,11 +99,10 @@ if (isset($_POST['add_to_cart'])) {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <?php
-    include '../includes/public/header.php';
-    ?>
+    <?php include '../includes/public/header.php'; ?>
 
     <main>
+        <!-- Отображение сообщения об успешном добавлении -->
         <?php if (isset($success_message)): ?>
             <p class="success"><?php echo $success_message; ?></p>
         <?php endif; ?>
@@ -134,20 +134,9 @@ if (isset($_POST['add_to_cart'])) {
 
         <!-- Список игр -->
         <div class="games-list">
-            <?php if (count($games) > 0): ?>
+            <?php if (!empty($games) && count($games) > 0): ?>
                 <?php foreach ($games as $game): ?>
-                    <div class="game-card">
-                        <h3><?php echo htmlspecialchars($game['title']); ?></h3>
-                        <img src="../images/<?php echo !empty($game['image']) ? htmlspecialchars($game['image']) : 'default.jpg'; ?>" alt="<?php echo htmlspecialchars($game['title']); ?>">
-                        <p>Price: $<?php echo htmlspecialchars($game['price']); ?></p>
-                        <p>Genre: <?php echo htmlspecialchars($game['genre']); ?></p>
-                        <form method="POST" action="catalog.php">
-                            <input type="hidden" name="game_id" value="<?php echo htmlspecialchars($game['id']); ?>">
-                            <input type="hidden" name="title" value="<?php echo htmlspecialchars($game['title']); ?>">
-                            <input type="hidden" name="price" value="<?php echo htmlspecialchars($game['price']); ?>">
-                            <button type="submit" name="add_to_cart">Add to Cart</button>
-                        </form>
-                    </div>
+                    <?php include '../includes/public/game_card.php'; ?>
                 <?php endforeach; ?>
             <?php else: ?>
                 <p>No games found.</p>
@@ -155,8 +144,6 @@ if (isset($_POST['add_to_cart'])) {
         </div>
     </main>
 
-    <?php
-    include '../includes/public/footer.php';
-    ?>
+    <?php include '../includes/public/footer.php'; ?>
 </body>
 </html>

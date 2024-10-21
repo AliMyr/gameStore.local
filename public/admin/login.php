@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Проверка логина и пароля
     if ($login === $admin_login && $password === $admin_password) {
         $_SESSION['admin_logged_in'] = true;
-        header('Location: admin.php');
+        header('Location: dashboard.php');
         exit();
     } else {
         $error = "Неверный логин или пароль";
